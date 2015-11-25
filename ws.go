@@ -42,15 +42,19 @@ const (
 	Nop
 )
 
-const _Op_name = "PushSignedDupCopySwapDiscardSlideAddSubMulDivModStoreRetrieveMarkUnsignedCallJumpJzJnRetExitOutCOutNInCInNNop"
+type opcode struct {
+	code Op
+	arg  int
+}
 
-var _Op_index = [...]uint8{0, 4, 10, 13, 17, 21, 28, 33, 36, 39, 42, 45, 48, 53, 61, 65, 73, 77, 81, 83, 85, 88, 92, 96, 100, 103, 106, 109}
+type opcodes []opcode
 
-func (i Op) String() string {
-	if i < 0 || i >= Op(len(_Op_index)-1) {
-		return fmt.Sprintf("Op(%d)", i)
+func (p *opcodes) jmp(arg int, pc *int) {
+	for i, t := range *p {
+		if t.code == Mark && t.arg == arg {
+			*pc = i
+		}
 	}
-	return _Op_name[_Op_index[i]:_Op_index[i+1]]
 }
 
 var optable = map[string]Op{
@@ -80,21 +84,6 @@ var optable = map[string]Op{
 	//" \t\n":    Slide,
 }
 
-type opcode struct {
-	code Op
-	arg  int
-}
-
-type opcodes []opcode
-
-func (p *opcodes) jmp(arg int, pc *int) {
-	for i, t := range *p {
-		if t.code == Mark && t.arg == arg {
-			*pc = i
-		}
-	}
-}
-
 type stack []int
 
 func (s *stack) push(v int) {
@@ -121,6 +110,7 @@ func (s *stack) dup() {
 }
 
 func whitespace(src []byte) []byte {
+	// remove needless comments
 	for {
 		pos := bytes.IndexFunc(src, func(r rune) bool {
 			return r != ' ' && r != '\t' && r != '\n'
@@ -134,6 +124,8 @@ func whitespace(src []byte) []byte {
 			src = append(src[:pos], src[pos+1:]...)
 		}
 	}
+
+	// parse whitespace into tokens
 	tokens := opcodes{}
 	for len(src) > 0 {
 		op := ""
@@ -153,6 +145,7 @@ func whitespace(src []byte) []byte {
 		var arg int
 		switch code {
 		case Push:
+			// handle argument
 		handle_signed_arg:
 			for i := 1; i < len(src); i++ {
 				switch src[i] {
@@ -161,6 +154,7 @@ func whitespace(src []byte) []byte {
 				case '\t':
 					arg = (arg << 1) | 1
 				case '\n':
+					// Push take singed argument
 					if src[0] == '\t' {
 						arg = -arg
 					}
@@ -169,6 +163,7 @@ func whitespace(src []byte) []byte {
 				}
 			}
 		case Mark, Call, Jump, Jz, Jn:
+			// handle argument
 		handle_unsigned_arg:
 			for i := 0; i < len(src); i++ {
 				switch src[i] {
