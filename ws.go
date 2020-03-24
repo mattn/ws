@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"os"
 	"strconv"
+	"strings"
 )
 
 type Op int
@@ -109,10 +110,10 @@ func (s *stack) dup() {
 	*s = append(*s, v)
 }
 
-func whitespace(src []byte) []byte {
+func whitespace(src []rune) {
 	// remove needless comments
 	for {
-		pos := bytes.IndexFunc(src, func(r rune) bool {
+		pos := strings.IndexFunc(string(src), func(r rune) bool {
 			return r != ' ' && r != '\t' && r != '\n'
 		})
 		if pos < 0 {
@@ -131,7 +132,7 @@ func whitespace(src []byte) []byte {
 		op := ""
 		code := Nop
 		for k, v := range optable {
-			if bytes.HasPrefix(src, []byte(k)) {
+			if strings.HasPrefix(string(src), k) {
 				op = k
 				code = v
 				break
@@ -282,5 +283,5 @@ func main() {
 		}
 	}
 
-	whitespace(content.Bytes())
+	whitespace([]rune(content.String()))
 }
