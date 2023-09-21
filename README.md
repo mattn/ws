@@ -15,7 +15,7 @@ $ ws input.ws
 ## Installation
 
 ```
-$ go get github.com/mattn/ws
+$ go install github.com/mattn/ws@latest
 ```
 
 ## License
